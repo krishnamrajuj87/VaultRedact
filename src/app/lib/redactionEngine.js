@@ -14,8 +14,13 @@ import { PDFDocument } from 'pdf-lib';
 import { rgb } from 'pdf-lib';
 import { PDFName, PDFNumber } from 'pdf-lib';
 
-// Configure the worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js`;
+// Set PDF.js worker path
+if (typeof window !== 'undefined') {
+  // Check if we're on the client side before setting worker
+  // This ensures the same PDF.js version is used throughout
+  const pdfWorkerVersion = '3.11.174'; // Match the installed pdfjs-dist version
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfWorkerVersion}/pdf.worker.min.js`;
+}
 
 // Initialize Google Gemini API
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY);
