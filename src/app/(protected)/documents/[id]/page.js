@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { getDocumentById, deleteDocument } from '../../../../app/lib/firebase';
 import { redactDocument, getRedactionReport, getUserTemplates } from '../../../../app/lib/redactionEngine';
 import { useAuth } from '../../../../app/lib/AuthContext';
+import TemplateEnrichment from './TemplateEnrichment';
 
 // Add ClientSideInitComponent to handle browser extension modifications
 function ClientSideInitComponent() {
@@ -64,6 +65,8 @@ export default function DocumentDetail() {
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [templateMetadataError, setTemplateMetadataError] = useState(false);
+  const [errorTemplateId, setErrorTemplateId] = useState(null);
 
   // Debug logging - helps troubleshoot template and user issues
   useEffect(() => {
@@ -168,21 +171,45 @@ export default function DocumentDetail() {
         });
       };
       
-      // Attempt 1: Use redactionEngine.getUserTemplates
+      // Try using the imported getUserTemplates function
       try {
-        console.log('Attempt 1: Trying to get templates using redactionEngine.getUserTemplates');
-        const templates = await getUserTemplates(user.uid);
+        console.log('Trying to get templates using imported getUserTemplates');
+        const templates = await getUserTemplates();
         
         if (templates && templates.length > 0) {
-          console.log('Success: Got templates from redactionEngine.getUserTemplates');
-          logTemplateDetails(templates);
-          setTemplates(templates);
+          console.log('Success: Got templates from imported getUserTemplates');
+          
+          // Ensure templates have rules property
+          const processedTemplates = templates.map(template => {
+            // Fix templates that have rules in a nested data property
+            if (!template.rules && template.data && template.data.rules) {
+              console.log(`Fixing template ${template.id} with nested rules`);
+              return {
+                ...template,
+                rules: template.data.rules
+              };
+            }
+            
+            // If template has ruleIds but no rules, initialize an empty rules array
+            if (!template.rules && template.ruleIds && Array.isArray(template.ruleIds)) {
+              console.log(`Template ${template.id} has ruleIds but no rules, initializing empty rules array`);
+              return {
+                ...template,
+                rules: []
+              };
+            }
+            
+            return template;
+          });
+          
+          logTemplateDetails(processedTemplates);
+          setTemplates(processedTemplates);
           
           // Auto-select the first template if none is selected
-          if (templates.length > 0 && selectedTemplateIds.length === 0) {
-            const templateWithRules = templates.find(t => 
+          if (processedTemplates.length > 0 && selectedTemplateIds.length === 0) {
+            const templateWithRules = processedTemplates.find(t => 
               (t.rules && t.rules.length > 0) || (t.ruleIds && t.ruleIds.length > 0)
-            ) || templates[0];
+            ) || processedTemplates[0];
             
             console.log(`Auto-selecting template: ${templateWithRules.id}`);
             setSelectedTemplateIds([templateWithRules.id]);
@@ -191,10 +218,10 @@ export default function DocumentDetail() {
           setIsTemplatesLoading(false);
           return;
         } else {
-          console.log('No templates returned from redactionEngine.getUserTemplates, trying next method');
+          console.log('No templates returned from imported getUserTemplates, trying next method');
         }
       } catch (attempt1Error) {
-        console.error('Error in attempt 1:', attempt1Error);
+        console.error('Error in imported getUserTemplates:', attempt1Error);
       }
       
       // Attempt 2: Direct import from firebase.js
@@ -205,14 +232,38 @@ export default function DocumentDetail() {
         
         if (templates && templates.length > 0) {
           console.log('Success: Got templates from firebase.getUserTemplates');
-          logTemplateDetails(templates);
-          setTemplates(templates);
+          
+          // Ensure templates have rules property
+          const processedTemplates = templates.map(template => {
+            // Fix templates that have rules in a nested data property
+            if (!template.rules && template.data && template.data.rules) {
+              console.log(`Fixing template ${template.id} with nested rules`);
+              return {
+                ...template,
+                rules: template.data.rules
+              };
+            }
+            
+            // If template has ruleIds but no rules, initialize an empty rules array
+            if (!template.rules && template.ruleIds && Array.isArray(template.ruleIds)) {
+              console.log(`Template ${template.id} has ruleIds but no rules, initializing empty rules array`);
+              return {
+                ...template,
+                rules: []
+              };
+            }
+            
+            return template;
+          });
+          
+          logTemplateDetails(processedTemplates);
+          setTemplates(processedTemplates);
           
           // Auto-select the first template if none is selected
-          if (templates.length > 0 && selectedTemplateIds.length === 0) {
-            const templateWithRules = templates.find(t => 
+          if (processedTemplates.length > 0 && selectedTemplateIds.length === 0) {
+            const templateWithRules = processedTemplates.find(t => 
               (t.rules && t.rules.length > 0) || (t.ruleIds && t.ruleIds.length > 0)
-            ) || templates[0];
+            ) || processedTemplates[0];
             
             console.log(`Auto-selecting template: ${templateWithRules.id}`);
             setSelectedTemplateIds([templateWithRules.id]);
@@ -238,24 +289,47 @@ export default function DocumentDetail() {
         );
         
         const querySnapshot = await getDocs(templatesQuery);
-        const templates = [];
+        const rawTemplates = [];
         
         querySnapshot.forEach((doc) => {
-          templates.push({
+          rawTemplates.push({
             id: doc.id,
             ...doc.data()
           });
         });
         
-        if (templates.length > 0) {
+        // Process templates to ensure they have valid rules
+        const processedTemplates = rawTemplates.map(template => {
+          // Fix templates that have rules in a nested data property
+          if (!template.rules && template.data && template.data.rules) {
+            console.log(`Fixing template ${template.id} with nested rules`);
+            return {
+              ...template,
+              rules: template.data.rules
+            };
+          }
+          
+          // If template has ruleIds but no rules, initialize an empty rules array
+          if (!template.rules && template.ruleIds && Array.isArray(template.ruleIds)) {
+            console.log(`Template ${template.id} has ruleIds but no rules, initializing empty rules array`);
+            return {
+              ...template,
+              rules: []
+            };
+          }
+          
+          return template;
+        });
+        
+        if (processedTemplates.length > 0) {
           console.log('Success: Got templates from direct Firestore query');
-          logTemplateDetails(templates);
-          setTemplates(templates);
+          logTemplateDetails(processedTemplates);
+          setTemplates(processedTemplates);
           
           // Auto-select the first template if none is selected
-          if (templates.length > 0 && selectedTemplateIds.length === 0) {
-            console.log(`Auto-selecting template: ${templates[0].id}`);
-            setSelectedTemplateIds([templates[0].id]);
+          if (processedTemplates.length > 0 && selectedTemplateIds.length === 0) {
+            console.log(`Auto-selecting template: ${processedTemplates[0].id}`);
+            setSelectedTemplateIds([processedTemplates[0].id]);
           }
         } else {
           console.log('No templates found in any method, user may need to create templates');
@@ -331,6 +405,8 @@ export default function DocumentDetail() {
     setIsProcessing(true);
     setProcessingProgress(0);
     setError('');
+    setTemplateMetadataError(false);
+    setErrorTemplateId(null);
     
     let progressInterval;
     
@@ -398,8 +474,21 @@ export default function DocumentDetail() {
         clearInterval(progressInterval);
       }
       
+      // Check for metadata error - "missing required version or checksum"
+      if (err.message.includes('missing required version or checksum')) {
+        setTemplateMetadataError(true);
+        // Try to extract template ID from error message
+        const templateIdMatch = err.message.match(/Rule\s+([^\s]+)/);
+        if (templateIdMatch && templateIdMatch[1]) {
+          setErrorTemplateId(selectedTemplateIds[0]);
+        } else {
+          setErrorTemplateId(selectedTemplateIds[0]);
+        }
+        
+        setError('The template is missing required metadata. This can be fixed automatically using the button below.');
+      } 
       // Handle specific errors more gracefully with user-friendly messages
-      if (err.message.includes('template') || err.message.includes('rules')) {
+      else if (err.message.includes('template') || err.message.includes('rules')) {
         setError('The selected template has no redaction rules or is invalid. Please select a different template or add rules to this template in Redaction Settings.');
       } else if (err.message.includes('user') || err.message.includes('authenticated')) {
         setError('Authentication error. Please sign out and sign back in, then try again.');
@@ -414,6 +503,13 @@ export default function DocumentDetail() {
       setIsProcessing(false);
       setProcessingProgress(0);
     }
+  };
+
+  // Handle template enrichment completion
+  const handleEnrichmentComplete = () => {
+    setTemplateMetadataError(false);
+    setErrorTemplateId(null);
+    setError('Template metadata has been updated. You can now try redaction again.');
   };
 
   const handleDeleteDocument = async () => {
@@ -530,15 +626,37 @@ export default function DocumentDetail() {
             animate={fadeIn.visible}
             className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-200"
           >
-            <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
-            <h3 className="mt-4 text-lg font-medium text-gray-900">Error</h3>
-            <p className="mt-2 text-gray-500 max-w-sm mx-auto">{error}</p>
-            <Link
-              href="/documents"
-              className="mt-6 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-chateau-green-600 hover:bg-chateau-green-700"
-            >
-              Return to Documents
-            </Link>
+            {templateMetadataError && errorTemplateId ? (
+              <>
+                <div className="mb-6">
+                  <TemplateEnrichment 
+                    templateIds={[errorTemplateId]} 
+                    onComplete={handleEnrichmentComplete} 
+                  />
+                </div>
+                <AlertCircle className="mx-auto h-12 w-12 text-amber-500" />
+                <h3 className="mt-4 text-lg font-medium text-gray-900">Template Metadata Error</h3>
+                <p className="mt-2 text-gray-500 max-w-sm mx-auto">{error}</p>
+                <button
+                  onClick={handleStartRedaction}
+                  className="mt-6 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-chateau-green-600 hover:bg-chateau-green-700"
+                >
+                  Try Again
+                </button>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
+                <h3 className="mt-4 text-lg font-medium text-gray-900">Error</h3>
+                <p className="mt-2 text-gray-500 max-w-sm mx-auto">{error}</p>
+                <Link
+                  href="/documents"
+                  className="mt-6 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-chateau-green-600 hover:bg-chateau-green-700"
+                >
+                  Return to Documents
+                </Link>
+              </>
+            )}
           </motion.div>
         ) : document ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -727,6 +845,13 @@ export default function DocumentDetail() {
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h2 className="text-lg font-medium text-gray-900 mb-4">Processing Status</h2>
                 
+                {templateMetadataError && errorTemplateId && (
+                  <TemplateEnrichment 
+                    templateIds={[errorTemplateId]} 
+                    onComplete={handleEnrichmentComplete} 
+                  />
+                )}
+                
                 {isProcessing ? (
                   <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <div className="flex">
@@ -818,7 +943,7 @@ export default function DocumentDetail() {
                       </div>
                     )}
                     
-                    {error && (
+                    {error && !templateMetadataError && (
                       <div className="p-3 mb-4 bg-red-50 text-red-800 text-sm rounded-md">
                         {error}
                       </div>
