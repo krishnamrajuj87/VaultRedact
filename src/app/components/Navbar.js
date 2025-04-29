@@ -35,7 +35,7 @@ export default function Navbar() {
               <Link href="/dashboard" className="flex-shrink-0 flex items-center">
                 <Shield className="h-8 w-8 text-white" />
                 <div className="ml-3">
-                  <div className="text-xl font-bold text-white">PharmaRedact</div>
+                  <div className="text-xl font-bold text-white">VaultRedact</div>
                   <div className="text-xs text-chateau-green-100">Document Redaction Solution</div>
                 </div>
               </Link>
@@ -70,7 +70,7 @@ export default function Navbar() {
             <Link href="/auth" className="flex-shrink-0 flex items-center">
               <Shield className="h-8 w-8 text-white" />
               <div className="ml-3">
-                <div className="text-xl font-bold text-white">PharmaRedact</div>
+                <div className="text-xl font-bold text-white">VaultRedact</div>
                 <div className="text-xs text-chateau-green-100">Document Redaction Solution</div>
               </div>
             </Link>

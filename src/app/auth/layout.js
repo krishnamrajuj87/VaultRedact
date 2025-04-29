@@ -12,8 +12,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Authentication - PharmaRedact",
-  description: "Sign in or register for PharmaRedact document redaction platform",
+  title: "Authentication - VaultRedact",
+  description: "Sign in or register for VaultRedact document redaction platform",
 };
 
 export default function AuthLayout({ children }) {

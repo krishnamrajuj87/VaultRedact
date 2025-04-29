@@ -1,4 +1,4 @@
-# PharmaRedact
+# VaultRedact
 
 A document redaction system designed for pharmaceutical companies to securely process and redact sensitive information from documents.
 

@@ -16,7 +16,7 @@ export default function ProtectedLayout({ children }) {
       <footer className="bg-white py-4 border-t border-gray-200 lg:pl-64">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-center text-sm text-gray-500">
-            &copy; {new Date().getFullYear()} PharmaRedact. All rights reserved.
+            &copy; {new Date().getFullYear()} VaultRedact. All rights reserved.
           </p>
         </div>
       </footer>

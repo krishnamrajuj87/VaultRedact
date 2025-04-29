@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "PharmaRedact - Document Redaction Solution",
+  title: "VaultRedact - Document Redaction Solution",
   description: "Secure document redaction platform for pharma and healthcare professionals",
   keywords: "redaction, document security, pharma, healthcare, compliance",
 };

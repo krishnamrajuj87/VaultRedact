@@ -397,7 +397,7 @@ function AuthContent() {
           <div className="flex items-center">
             <Shield className="h-10 w-10 text-white" />
             <div className="ml-3">
-              <div className="text-2xl font-bold text-white">PharmaRedact</div>
+              <div className="text-2xl font-bold text-white">VaultRedact</div>
               <div className="text-sm text-chateau-green-50">Document Redaction Solution</div>
             </div>
           </div>
