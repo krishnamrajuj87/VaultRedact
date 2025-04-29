@@ -6,10 +6,11 @@ A document redaction system designed for pharmaceutical companies to securely pr
 
 - Secure document upload and processing
 - Customizable redaction templates and rules
-- AI-enhanced sensitive information detection
+- AI-enhanced sensitive information detection (using Google Gemini API)
 - True content removal for PDF and DOCX files
 - Redaction reports and verification tools
 - User authentication and document management
+- Modern UI with React and Tailwind CSS
 
 ## Getting Started
 
@@ -18,13 +19,14 @@ A document redaction system designed for pharmaceutical companies to securely pr
 - Node.js 18.x or higher
 - npm 9.x or higher
 - Firebase account for authentication and storage
+- Google Gemini API key for AI processing
 
 ### Installation
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/pharma-redact.git
-cd pharma-redact
+git clone https://github.com/yourusername/VaultRedact.git
+cd VaultRedact
 ```
 
 2. Install dependencies
@@ -83,20 +85,50 @@ Enable Email/Password and Google authentication methods in the Firebase Console.
 
 ### Storage Rules
 
-Implement the storage rules from the `storage.rules` file in your Firebase Console to ensure secure document access.
+The project uses the following Firebase Storage rules to ensure secure document access:
+
+```
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      // Allow read and write access to authenticated users only
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+```
 
 ### CORS Configuration
 
-Apply the CORS configuration from the `cors.json` file to allow proper communication with Firebase Storage. Run:
+For Firebase Storage to work properly with the application, you need to configure CORS settings. Use the included `cors.json` file:
 
 ```bash
 gsutil cors set cors.json gs://your-firebase-storage-bucket
 ```
 
+Where `your-firebase-storage-bucket` is typically `your-project-id.appspot.com`
+
+## Project Structure
+
+- `/src/app`: Next.js application routes and pages
+- `/src/components`: Reusable UI components
+- `/src/lib`: Utility functions and Firebase configuration
+- `/src/scripts`: Helper scripts for template processing
+
+## Technologies Used
+
+- Next.js 15.x (React 19)
+- Firebase (Authentication, Storage)
+- Tailwind CSS
+- Google Gemini API for AI-assisted redaction
+- PDF-lib and docx for document processing
+
 ## Building for Production
 
 ```bash
 npm run build
+npm run start
 ```
 
 ## Troubleshooting
@@ -104,6 +136,12 @@ npm run build
 If you encounter any deployment issues:
 
 1. Make sure all environment variables are correctly set in Vercel
-2. Ensure Firebase services (Auth, Firestore, Storage) are properly configured
+2. Ensure Firebase services (Auth, Storage) are properly configured
 3. Check that CORS is properly configured for Firebase Storage
 4. Verify the Firebase Security Rules are permitting proper access
+
+For more information on CORS configuration, refer to the `CORS-README.md` file.
+
+## License
+
+This project is proprietary and confidential. All rights reserved.
