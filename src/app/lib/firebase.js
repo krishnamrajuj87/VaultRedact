@@ -117,7 +117,14 @@ export const getUserDocuments = async (userId) => {
     throw error;
   }
 };
-
+export const getRedactionReportById = async (documentId) => {
+  const docRef = doc(db, 'redaction_responses', documentId);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return { id: docSnap.id, ...docSnap.data() };
+  }
+  return null;
+};
 /**
  * Retrieves a document by its ID
  * @param {string} documentId - The ID of the document to retrieve
@@ -141,6 +148,7 @@ export const getDocumentById = async (documentId) => {
         ...docSnap.data()
       };
       console.log('[app/lib/firebase.js] Document found');
+      console.log("documentData", documentData);
       return documentData;
     } else {
       console.log('[app/lib/firebase.js] Document not found');
@@ -228,6 +236,33 @@ export const deleteRedactionRule = async (ruleId) => {
   }
 };
 
+/**
+ * Fetch multiple redaction rules by an array of ruleIds
+ * @param {string[]} ruleIds - Array of rule IDs
+ * @returns {Promise<Array>} Array of rule objects
+ */
+export const getRedactionRulesByIds = async (ruleIds) => {
+  if (!ruleIds || !Array.isArray(ruleIds) || ruleIds.length === 0) return [];
+  try {
+    // Firestore 'in' queries are limited to 10 items per query
+    const chunkSize = 10;
+    let rules = [];
+    for (let i = 0; i < ruleIds.length; i += chunkSize) {
+      const chunk = ruleIds.slice(i, i + chunkSize);
+      const q = query(
+        collection(db, 'redaction_rules'),
+        where('__name__', 'in', chunk)
+      );
+      const querySnapshot = await getDocs(q);
+      rules = rules.concat(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }
+    return rules;
+  } catch (error) {
+    console.error('[app/lib/firebase.js] Error fetching redaction rules by IDs:', error);
+    throw error;
+  }
+};
+
 // Templates helpers
 export const getUserTemplates = async (userId) => {
   try {
@@ -260,7 +295,10 @@ export const getUserTemplates = async (userId) => {
       
       return bTime - aTime; // descending order
     });
-    
+    for (const template of templates) {
+      const rules = await getRedactionRulesByIds(template.ruleIds);
+      template.rules = rules;
+    }
     return templates;
   } catch (error) {
     console.error('[app/lib/firebase.js] Error fetching templates:', error);

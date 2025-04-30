@@ -163,6 +163,8 @@ export default function DocumentDetail() {
         templates.forEach(template => {
           const hasRules = template.rules && Array.isArray(template.rules) && template.rules.length > 0;
           const hasRuleIds = template.ruleIds && Array.isArray(template.ruleIds) && template.ruleIds.length > 0;
+          
+          
           console.log(`Template: ${template.id} - ${template.name}`, {
             hasRules: hasRules ? `${template.rules.length} rules` : 'No rules',
             hasRuleIds: hasRuleIds ? `${template.ruleIds.length} ruleIds` : 'No ruleIds',
@@ -170,7 +172,16 @@ export default function DocumentDetail() {
           });
         });
       };
-      
+      const { getRedactionRulesByIds } = await import('../../../../app/lib/firebase');
+            for (const template of templates) {
+              try {
+                const rules = await getRedactionRulesByIds(template.ruleIds);
+                template.rules = rules;
+                console.log(`Enriched template ${template.id} with ${rules.length} rules from ruleIds`);
+              } catch (err) {
+                console.error(`Failed to enrich template ${template.id} with ruleIds:`, err);
+              }
+            }
       // Try using the imported getUserTemplates function
       try {
         console.log('Trying to get templates using imported getUserTemplates');
@@ -179,9 +190,25 @@ export default function DocumentDetail() {
         if (templates && templates.length > 0) {
           console.log('Success: Got templates from imported getUserTemplates');
           
-          // Ensure templates have rules property
+          // Enrich templates that only have ruleIds (no rules)
+          const templatesToEnrich = templates.filter(template =>
+            (!template.rules || template.rules.length === 0) && template.ruleIds && Array.isArray(template.ruleIds) && template.ruleIds.length > 0
+          );
+          if (templatesToEnrich.length > 0) {
+            console.log(`Enriching ${templatesToEnrich.length} templates with rules from ruleIds`);
+            const { getRedactionRulesByIds } = await import('../../../../app/lib/firebase');
+            for (const template of templatesToEnrich) {
+              try {
+                const rules = await getRedactionRulesByIds(template.ruleIds);
+                template.rules = rules;
+                console.log(`Enriched template ${template.id} with ${rules.length} rules from ruleIds`);
+              } catch (err) {
+                console.error(`Failed to enrich template ${template.id} with ruleIds:`, err);
+              }
+            }
+          }
+          // Fix templates that have rules in a nested data property
           const processedTemplates = templates.map(template => {
-            // Fix templates that have rules in a nested data property
             if (!template.rules && template.data && template.data.rules) {
               console.log(`Fixing template ${template.id} with nested rules`);
               return {
@@ -189,8 +216,7 @@ export default function DocumentDetail() {
                 rules: template.data.rules
               };
             }
-            
-            // If template has ruleIds but no rules, initialize an empty rules array
+            // If template has ruleIds but no rules, initialize an empty rules array (should be enriched above)
             if (!template.rules && template.ruleIds && Array.isArray(template.ruleIds)) {
               console.log(`Template ${template.id} has ruleIds but no rules, initializing empty rules array`);
               return {
@@ -198,23 +224,18 @@ export default function DocumentDetail() {
                 rules: []
               };
             }
-            
             return template;
           });
-          
           logTemplateDetails(processedTemplates);
           setTemplates(processedTemplates);
-          
           // Auto-select the first template if none is selected
           if (processedTemplates.length > 0 && selectedTemplateIds.length === 0) {
             const templateWithRules = processedTemplates.find(t => 
               (t.rules && t.rules.length > 0) || (t.ruleIds && t.ruleIds.length > 0)
             ) || processedTemplates[0];
-            
             console.log(`Auto-selecting template: ${templateWithRules.id}`);
             setSelectedTemplateIds([templateWithRules.id]);
           }
-          
           setIsTemplatesLoading(false);
           return;
         } else {
@@ -413,6 +434,7 @@ export default function DocumentDetail() {
     try {
       // First verify the template has rules
       const selectedTemplate = templates.find(t => t.id === selectedTemplateIds[0]);
+      console.log('Selected Template:', selectedTemplate);
       if (!selectedTemplate) {
         throw new Error('Selected template not found. Please try selecting a different template.');
       }
@@ -435,28 +457,38 @@ export default function DocumentDetail() {
       console.log(`Starting redaction process for document: ${documentId} with template: ${selectedTemplateIds[0]}`);
       console.log('Template details:', selectedTemplate);
       
-      // Dynamically import redactDocument to avoid circular dependencies
-      const redactDocumentModule = await import('../../../../app/lib/redactionEngine');
-      
-      // Process the document using the redaction engine with the selected template
-      const result = await redactDocumentModule.redactDocument(documentId, selectedTemplateIds[0]);
-      
-      console.log('Redaction completed successfully:', result);
-      
+      // Replace redactDocumentModule.redactDocument with API call
+      console.log('Calling redaction API at http://localhost:8000/redact', {
+        document_id: documentId,
+        template_id: selectedTemplateIds[0],
+        user_id: user.uid
+      });
+      const response = await fetch('http://localhost:8000/redact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          document_id: documentId,
+          template_id: selectedTemplateIds[0],
+          user_id: user.uid
+        })
+      });
+      const result = await response.json();
+      console.log('Redaction API response:', result);
       // Clear progress interval and set to 100%
       clearInterval(progressInterval);
       progressInterval = null;
       setProcessingProgress(100);
-      
       // Update document with redacted status and URL
-      if (result && result.success) {
-        setDocument(prev => ({
-          ...prev,
-          status: 'redacted',
-          redactedAt: new Date(),
-          redactedUrl: result.redactedUrl || prev.redactedUrl || prev.downloadUrl,
-          downloadUrl: result.redactedUrl || prev.downloadUrl
-        }));
+      if (result) {
+        // setDocument(prev => ({
+        //   ...prev,
+        //   status: 'redacted',
+        //   redactedAt: new Date(),
+        //   redactedUrl: result.redactedUrl || prev.redactedUrl || prev.downloadUrl,
+        //   downloadUrl: result.redactedUrl || prev.downloadUrl
+        // }));
         
         // Brief delay to show 100% completion
         await new Promise(resolve => setTimeout(resolve, 800));
@@ -1066,14 +1098,15 @@ export default function DocumentDetail() {
                 ) : (
                   <div className="space-y-2">
                     {templates.map(template => {
+                      console.log('Template:', template);
                       // Calculate actual rule count
                       let ruleCount = 0;
-                      if (template.rules && Array.isArray(template.rules)) {
+                      if (template.rules && Array.isArray(template.rules) && template.rules.length > 0) {
                         ruleCount = template.rules.length;
-                      } else if (template.ruleIds && Array.isArray(template.ruleIds)) {
+                      } else if (template.ruleIds && Array.isArray(template.ruleIds) && template.ruleIds.length > 0) {
                         ruleCount = template.ruleIds.length;
                       }
-                      
+                      console.log('Rule Count:', ruleCount,template.ruleIds && Array.isArray(template.ruleIds),template.ruleIds.length);
                       const hasRules = ruleCount > 0;
                       const isSelected = selectedTemplateIds.includes(template.id);
                       

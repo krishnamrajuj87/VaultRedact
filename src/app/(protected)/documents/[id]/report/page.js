@@ -8,10 +8,10 @@ import {
   Send, Search, Filter, Download, Info, FileText, FileType
 } from 'lucide-react';
 import Link from 'next/link';
-import { getDocumentById } from '../../../../../app/lib/firebase';
-import { updateRedaction } from '../../../../../app/lib/redactionEngine';
-import { getRedactionReport } from '../../../../../app/lib/redactionEngine';
-import { useAuth } from '../../../../../app/lib/AuthContext';
+import { getDocumentById } from '../../../../lib/firebase';
+import { updateRedaction } from '../../../../lib/redactionEngine';
+import { getRedactionReport } from '../../../../lib/redactionEngine';
+import { useAuth } from '../../../../lib/AuthContext';
 
 // Animation variants
 const fadeIn = {
@@ -24,7 +24,7 @@ export default function RedactionReport() {
   const router = useRouter();
   const params = useParams();
   const documentId = params?.id;
-
+  console.log("documentId", documentId);
   const [document, setDocument] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -49,14 +49,23 @@ export default function RedactionReport() {
       fetchDocumentDetails();
     }
   }, [user, authLoading, documentId]);
+const getCategoryName = (category) => {
+  const categoryMap = {
+    'PHI': 'Protected Health Information',
+    'PII': 'Personal Information',
+    'CUSTOM': 'Custom',
+    'OTHER': 'Other'
+  }
+  return categoryMap[category] || category;
 
+}
   const fetchDocumentDetails = async () => {
     setIsLoading(true);
     setError('');
     
     try {
       const doc = await getDocumentById(documentId);
-      
+      console.log("doc", doc);
       if (!doc) {
         setError('Document not found');
         setIsLoading(false);
@@ -80,23 +89,25 @@ export default function RedactionReport() {
       // Fetch the actual redaction report
       try {
         const reportData = await getRedactionReport(documentId);
-        
+        console.log("reportData", reportData);
         if (reportData) {
           setReport(reportData);
-          
+         
           // For redacted items, convert the format if needed
-          if (reportData.redactedEntities && reportData.redactedEntities.length > 0) {
-            const formattedItems = reportData.redactedEntities.map((entity, index) => {
+          if (reportData.redactions && reportData.redactions.length > 0) {
+            const formattedItems = reportData.redactions.map((entity, index) => {
               // Map to our display format
               return {
+                key: `entity-${index}`,
                 id: entity.id || `entity-${index}`,
                 entity: entity.entity || entity.text || '[Unknown]',
                 type: entity.type || 'UNKNOWN',
-                category: getCategoryFromType(entity.type),
+                category: entity.is_ai_detected ? 'AI' : getCategoryName(entity.category) || 'UNKNOWN',
                 location: entity.page ? `Page ${entity.page}` : 
                           entity.paragraph ? `Paragraph ${entity.paragraph}` : 'Unknown location',
                 confidence: entity.confidence || 0.95,
                 confirmed: true,
+                rule: entity.rule || 'UNKNOWN',
                 redactionMethod: entity.redactionMethod || (entity.confidence ? 'AI' : 'Rule-based')
               };
             });
@@ -161,7 +172,11 @@ export default function RedactionReport() {
   };
 
   const handleRedactionSelect = (redaction) => {
-    setSelectedRedaction(redaction);
+    if(selectedRedaction?.key === redaction.key){
+      setSelectedRedaction(null);
+    }else{
+      setSelectedRedaction(redaction);
+    }
     setFeedbackText('');
   };
 
@@ -178,27 +193,29 @@ export default function RedactionReport() {
   };
 
   const handleSubmitFeedback = async () => {
-    if (!selectedRedaction || !feedbackText.trim()) return;
+    if (!feedbackText.trim()) return;
     
     setIsSaving(true);
     
     try {
-      // Update the redaction in the database
-      await updateRedaction(documentId, selectedRedaction.id, {
-        confirmed: selectedRedaction.confirmed,
-        feedback: feedbackText
+      console.log("selectedRedaction", selectedRedaction, feedbackText, user.uid, documentId, report.template_id);
+      // Call the redact-with-prompt API
+      const response = await fetch('http://localhost:8000/redact-with-prompt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          document_id: documentId,
+          prompt: feedbackText,
+          user_id: user.uid,
+          template_id: report.template_id
+        })
       });
-      
-      // Update the local state
-      setRedactedItems(items => 
-        items.map(item => 
-          item.id === selectedRedaction.id 
-            ? { ...item, feedback: feedbackText } 
-            : item
-        )
-      );
-      
-      setFeedbackText('');
+      const result = await response.json();
+      console.log('Redact-with-prompt API response:', result);
+      // After API completes, refresh document details
+      await fetchDocumentDetails();
       setIsSaving(false);
     } catch (err) {
       console.error('Error updating redaction:', err);
@@ -250,7 +267,8 @@ export default function RedactionReport() {
   if (!user) {
     return null; // This will be handled by the useEffect redirect
   }
-
+  console.log("redactedItems", filteredRedactions);
+  const placeholder = selectedRedaction?.entity ? `Provide correction for "${selectedRedaction?.entity}"...` : "Provide correction...";
   return (
     <div className="max-w-full mx-auto px-4 py-10">
       {/* Back button */}
@@ -487,9 +505,9 @@ export default function RedactionReport() {
                   <div className="divide-y divide-gray-200">
                     {filteredRedactions.map(item => (
                       <div 
-                        key={item.id}
+                        key={item.key}
                         className={`p-4 cursor-pointer transition-all ${
-                          selectedRedaction?.id === item.id 
+                          selectedRedaction?.key === item.key 
                             ? 'bg-chateau-green-50 border-l-4 border-chateau-green-500' 
                             : 'hover:bg-gray-50 border-l-4 border-transparent'
                         }`}
@@ -501,6 +519,7 @@ export default function RedactionReport() {
                               <span className="font-medium text-gray-900 mr-2">
                                 {item.entity}
                               </span>
+                              
                               <span className={`text-xs px-2 py-0.5 rounded-full ${
                                 item.category === 'Personal' ? 'bg-blue-100 text-blue-800' :
                                 item.category === 'Financial' ? 'bg-green-100 text-green-800' :
@@ -509,16 +528,21 @@ export default function RedactionReport() {
                                 item.category === 'Legal' ? 'bg-pink-100 text-pink-800' :
                                 'bg-gray-100 text-gray-800'
                               }`}>
-                                {item.type}
+                                {item.category}
+                              </span>
+                            </div>
+                            <div className="flex items-center text-xs text-gray-500 mt-1 space-x-2">
+                              <span className="font-medium text-gray-900 mr-2">
+                                {item.rule}
                               </span>
                             </div>
                             <div className="flex items-center text-xs text-gray-500 mt-1 space-x-2">
                               <span>{item.location}</span>
-                              <span title={`Confidence: ${(item.confidence * 100).toFixed(0)}%`} className={`px-1.5 py-0.5 rounded-full ${
+                              {/* <span title={`Confidence: ${(item.confidence * 100).toFixed(0)}%`} className={`px-1.5 py-0.5 rounded-full ${
                                 item.redactionMethod === 'AI' ? 'bg-blue-50 text-blue-700' : 'bg-gray-50 text-gray-700'
                               }`}>
                                 {item.redactionMethod || 'Rule'}
-                              </span>
+                              </span> */}
                             </div>
                           </div>
                           <div className="flex items-center">
@@ -609,11 +633,14 @@ export default function RedactionReport() {
                     </div>
                   </div>
                   
-                  <div className="flex flex-col space-y-3">
+                  
+                </div>
+              )}
+              <div className="flex flex-col space-y-3 p-2">
                     <textarea 
                       value={feedbackText}
                       onChange={e => setFeedbackText(e.target.value)}
-                      placeholder={`Provide feedback for "${selectedRedaction.entity}"...`}
+                      placeholder={placeholder}
                       className="w-full p-2 text-sm border border-gray-300 rounded-md focus:ring-chateau-green-500 focus:border-chateau-green-500"
                       rows={2}
                     />
@@ -640,8 +667,6 @@ export default function RedactionReport() {
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
             </div>
           </div>
         </motion.div>

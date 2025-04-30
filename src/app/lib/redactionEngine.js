@@ -1,6 +1,6 @@
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, getBytes } from 'firebase/storage';
 import { doc, updateDoc, setDoc, getDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
-import { db, auth } from './firebase';
+import { db, auth, getRedactionReportById, getRedactionRulesByIds } from './firebase';
 import { getAuth } from 'firebase/auth';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
@@ -1682,6 +1682,11 @@ export const redactDocument = async (documentOrId, templateOrId = null) => {
         const templateSnap = await getDoc(templateRef);
         if (!templateSnap.exists()) throw new Error(`Template with ID ${templateId} not found.`);
         template = { id: templateSnap.id, ...templateSnap.data() };
+        if(!template.rules) {
+          const { getRedactionRulesByIds } = await import('./firebase');
+          const rules = await getRedactionRulesByIds(template.ruleIds);
+          template.rules = rules;
+        }
         console.log('Successfully fetched template data.');
     } else if (typeof templateOrId === 'object' && templateOrId !== null) {
         template = templateOrId;
@@ -2704,7 +2709,7 @@ export async function getUserTemplates() {
     
     // Enrich templates with proper rule metadata
     const enrichedTemplates = enrichAllTemplates(templates);
-    console.log('Templates enriched with metadata');
+    console.log('Templates enriched with metadata',enrichedTemplates);
     
     return enrichedTemplates;
   } catch (error) {
@@ -3737,5 +3742,55 @@ async function applyAndFlattenRedactionAnnotations(pdfDoc, pageIndex) {
     throw new Error(`Failed to apply/flatten redactions on page ${pageIndex + 1}: ${error.message}`);
   }
 }
-
+// ... existing code ...
+/**
+ * Fetches the most recent redaction report for a document
+ * @param {string} documentId - The document ID
+ * @returns {Promise<Object|null>} - The latest redaction report or null if not found
+ */
+export async function getRedactionReport(documentId) {
+  try {
+    if (!documentId) throw new Error('documentId is required');
+    let result = await getRedactionReportById(documentId);
+    console.log("report", result);
+    if (!result) {
+      console.log(`[redactionEngine] No redaction report found for document ${documentId}`);
+      return null;
+    }else{
+      console.log(`[redactionEngine] Found redaction report for document ${documentId}`);
+      let {redactions} = result;
+      if(redactions){
+        const aiDetected = redactions.filter(redaction => redaction.is_ai_detected);
+        const ruleDetected = redactions.filter(redaction => !redaction.is_ai_detected);
+        const ruleIds = [...new Set(ruleDetected.map(redaction => redaction.rule_id))];
+        console.log("ruleIds", ruleIds);
+        const rules = await getRedactionRulesByIds(ruleIds);
+        console.log("rules", rules);
+        const redactionRules = ruleDetected.map((redaction)=>{
+          const rule = rules.find((rule)=>rule.id === redaction.rule_id);
+          return {
+            id: rule.id,
+            name: rule.name,
+            description: rule.description,
+            type: rule.type,
+            category: rule.category,
+            pattern: rule.pattern,
+            ...redaction
+          }
+        })
+        result.redactions = [...aiDetected, ...redactionRules].sort((a,b)=>a.index - b.index);
+       return result;
+        
+      }else{
+        console.log(`[redactionEngine] No redactions found for document ${documentId}`);
+        return result;
+      }
+    }
+  
+    } catch (error) {
+    console.error('[redactionEngine] Error fetching redaction report:', error);
+    return null;
+  }
+}
+// ... existing code ...
 

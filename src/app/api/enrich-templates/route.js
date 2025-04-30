@@ -82,6 +82,11 @@ async function enrichTemplate(templateId) {
     }
 
     const template = tplSnap.data();
+    if(!template.rules) {
+      const { getRedactionRulesByIds } = await import('../../lib/firebase');
+      const rules = await getRedactionRulesByIds(template.ruleIds);
+      template.rules = rules;
+    }
     let updatedCount = 0;
     
     // Check if template has rules
