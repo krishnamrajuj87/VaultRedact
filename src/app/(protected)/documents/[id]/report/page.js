@@ -12,7 +12,7 @@ import { getDocumentById } from '../../../../lib/firebase';
 import { updateRedaction } from '../../../../lib/redactionEngine';
 import { getRedactionReport } from '../../../../lib/redactionEngine';
 import { useAuth } from '../../../../lib/AuthContext';
-
+const HOST = process.env.NEXT_PUBLIC_API_URL;
 // Animation variants
 const fadeIn = {
   hidden: { opacity: 0 },
@@ -200,7 +200,7 @@ const getCategoryName = (category) => {
     try {
       console.log("selectedRedaction", selectedRedaction, feedbackText, user.uid, documentId, report.template_id);
       // Call the redact-with-prompt API
-      const response = await fetch('http://localhost:8000/redact-with-prompt', {
+      const response = await fetch(`${HOST}/redact-with-prompt`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

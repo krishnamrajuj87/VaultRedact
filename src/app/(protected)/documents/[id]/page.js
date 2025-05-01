@@ -14,7 +14,7 @@ import { getDocumentById, deleteDocument } from '../../../../app/lib/firebase';
 import { redactDocument, getRedactionReport, getUserTemplates } from '../../../../app/lib/redactionEngine';
 import { useAuth } from '../../../../app/lib/AuthContext';
 import TemplateEnrichment from './TemplateEnrichment';
-
+const HOST = process.env.NEXT_PUBLIC_API_URL;
 // Add ClientSideInitComponent to handle browser extension modifications
 function ClientSideInitComponent() {
   useEffect(() => {
@@ -458,12 +458,12 @@ export default function DocumentDetail() {
       console.log('Template details:', selectedTemplate);
       
       // Replace redactDocumentModule.redactDocument with API call
-      console.log('Calling redaction API at http://localhost:8000/redact', {
+      console.log(`Calling redaction API at ${HOST}/redact`, {
         document_id: documentId,
         template_id: selectedTemplateIds[0],
         user_id: user.uid
       });
-      const response = await fetch('http://localhost:8000/redact', {
+      const response = await fetch(`${HOST}/redact`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
