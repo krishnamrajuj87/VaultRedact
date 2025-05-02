@@ -444,13 +444,13 @@ const RulesTab = () => {
               exit="exit"
               layout
             >
-              <Card className={`h-full flex flex-col ${!rule.isEnabled ? 'opacity-60' : ''}`}>
+              <Card className={`h-full flex flex-col ${false ? 'opacity-60' : ''}`}>
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <CardTitle className="flex items-center gap-2">
                         {rule.name}
-                        {!rule.isEnabled && (
+                        {false && (
                           <Badge variant="outline" className="ml-2 text-xs">Disabled</Badge>
                         )}
                       </CardTitle>
