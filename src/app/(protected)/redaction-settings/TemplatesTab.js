@@ -298,7 +298,7 @@ const TemplatesTab = () => {
                   <ScrollArea className="h-60 border rounded-md p-4">
                     <div className="space-y-2">
                     <div  className="flex items-start gap-2 pb-2 border-b">
-                        <h5 className="text-sm font-medium leading-none cursor-pointer">Standard Rules</h5>
+                        <h5 className="text-sm font-medium leading-none cursor-pointer">Default Redaction Rules</h5>
                        </div>
                       {standardRules.map((rule) => (
                        <div key={rule.id} className="flex items-start gap-2 pb-2 border-b">
@@ -325,7 +325,7 @@ const TemplatesTab = () => {
                      </div>
                       ))}
                       <div  className="flex items-start gap-2 pb-2 border-b">
-                        <h5 className="text-sm font-medium leading-none cursor-pointer">Custom Rules</h5>
+                        <h5 className="text-sm font-medium leading-none cursor-pointer">User Redaction Rules</h5>
                        </div>
                       {rules.map((rule) => (
                         <div key={rule.id} className="flex items-start gap-2 pb-2 border-b">
@@ -511,7 +511,7 @@ const TemplatesTab = () => {
               <ScrollArea className="h-60 border rounded-md p-4">
                 <div className="space-y-2">
                 <div  className="flex items-start gap-2 pb-2 border-b">
-                    <h5 className="text-sm font-medium leading-none cursor-pointer">Standard Rules</h5>
+                    <h5 className="text-sm font-medium leading-none cursor-pointer">Default Redaction Rules</h5>
                   </div>
                   {standardRules.map((rule) => (
                     <div key={rule.id} className="flex items-start gap-2 pb-2 border-b">
@@ -538,7 +538,7 @@ const TemplatesTab = () => {
                     </div>
                   ))}
                   <div  className="flex items-start gap-2 pb-2 border-b">
-                    <h5 className="text-sm font-medium leading-none cursor-pointer">Custom Rules</h5>
+                    <h5 className="text-sm font-medium leading-none cursor-pointer">User Redaction Rules</h5>
                   </div>
                   {rules.map((rule) => (
                     <div key={rule.id} className="flex items-start gap-2 pb-2 border-b">

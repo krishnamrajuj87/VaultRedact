@@ -8,7 +8,8 @@ import {
   createRedactionRule,
   getUserRedactionRules,
   updateRedactionRule,
-  deleteRedactionRule
+  deleteRedactionRule,
+  getStandardRedactionRules
 } from "../../lib/firebase";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -36,6 +37,7 @@ const RulesTab = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentRule, setCurrentRule] = useState(null);
+  const [standardRules, setStandardRules] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -59,6 +61,8 @@ const RulesTab = () => {
     try {
       const fetchedRules = await getUserRedactionRules(user.uid);
       setRules(fetchedRules);
+      const standardRules = await getStandardRedactionRules();
+      setStandardRules(standardRules);
     } catch (err) {
       console.error("Error fetching rules:", err);
       setError("Failed to load your redaction rules. Please try again.");
@@ -231,8 +235,8 @@ const RulesTab = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">Redaction Rules</h2>
+      <div className="flex justify-end items-center mb-6">
+        {/* <h2 className="text-xl font-semibold">Redaction Rules</h2> */}
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button className="flex items-center gap-1">
@@ -338,6 +342,9 @@ const RulesTab = () => {
           </Button>
         </div>
       ) : (
+        <>
+        <h2 className="text-xl font-semibold mb-6">Custom Redaction Rules</h2>
+      
         <motion.div 
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
           variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
@@ -419,8 +426,62 @@ const RulesTab = () => {
             ))}
           </AnimatePresence>
         </motion.div>
+        </>
       )}
-
+    <h2 className="text-xl font-semibold my-6">Default Redaction Rules</h2>
+      
+      <motion.div 
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+        variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
+        initial="hidden"
+        animate="visible"
+      >
+        <AnimatePresence>
+          {standardRules.map((rule) => (
+            <motion.div
+              key={rule.id}
+              variants={itemVariants}
+              exit="exit"
+              layout
+            >
+              <Card className={`h-full flex flex-col ${!rule.isEnabled ? 'opacity-60' : ''}`}>
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <CardTitle className="flex items-center gap-2">
+                        {rule.name}
+                        {!rule.isEnabled && (
+                          <Badge variant="outline" className="ml-2 text-xs">Disabled</Badge>
+                        )}
+                      </CardTitle>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <Badge variant={getCategoryColor(rule.category)}>
+                          {rule.category === "PHI" ? "Protected Health Info (PHI)" :
+                           rule.category === "PII" ? "Personal Info (PII)" : "Custom"}
+                        </Badge>
+                        <Badge variant={getSeverityColor(rule.severity)}>
+                          {rule.severity === "high" ? "High Priority" :
+                           rule.severity === "medium" ? "Medium Priority" : "Low Priority"}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  {rule.description && (
+                    <p className="text-muted-foreground text-sm mb-3">{rule.description}</p>
+                  )}
+                  <div className="bg-muted/50 rounded-md p-2 overflow-x-auto">
+                    <code className="text-xs break-all">{rule.pattern}</code>
+                  </div>
+                </CardContent>
+               
+              </Card>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </motion.div>
+    
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>

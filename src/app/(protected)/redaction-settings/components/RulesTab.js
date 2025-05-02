@@ -45,7 +45,8 @@ import {
   getUserRedactionRules,
   createRedactionRule as createRule,
   updateRedactionRule as updateRule,
-  deleteRedactionRule as deleteRule
+  deleteRedactionRule as deleteRule,
+  getStandardRedactionRules
 } from "../../../lib/firebase";
 
 // Animation variants
@@ -95,7 +96,7 @@ export default function RulesTab({ userId }) {
   const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  
+  const [standardRules, setStandardRules] = useState([]);
   // Form data
   const [formData, setFormData] = useState({
     name: "",
@@ -136,6 +137,9 @@ export default function RulesTab({ userId }) {
       const userRules = await getUserRedactionRules(userId);
       setRules(userRules);
       setFilteredRules(userRules);
+      const standardRules = await getStandardRedactionRules();
+      console.log("standardRules", standardRules);
+      setStandardRules(standardRules);
     } catch (err) {
       console.error("Error fetching rules:", err);
       setError("Failed to load redaction rules. Please try again later.");
@@ -507,7 +511,106 @@ export default function RulesTab({ userId }) {
           ))}
         </motion.div>
       )}
-      
+      <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+        >
+          {standardRules.map((rule) => (
+            <motion.div key={rule.id} variants={itemVariants}>
+              <Card className="h-full">
+                <CardContent className="pt-6">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-medium text-lg truncate" title={rule.name}>
+                      {rule.name}
+                    </h3>
+                    <div className="flex space-x-1">
+                      {getSeverityBadge(rule.severity)}
+                      {rule.isActive ? (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          Active
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
+                          Inactive
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2" title={rule.description}>
+                    {rule.description || "No description provided"}
+                  </p>
+                  
+                  <div className="mb-4">
+                    <Label className="text-xs text-muted-foreground mb-1 block">Pattern</Label>
+                    <div className="bg-muted p-2 rounded text-sm font-mono break-all">
+                      {rule.pattern}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Category</Label>
+                    <Badge variant="secondary">
+                      {getCategoryLabel(rule.category)}
+                    </Badge>
+                  </div>
+                </CardContent>
+                
+                <CardFooter className="flex justify-end space-x-2 pt-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDuplicate(rule)}
+                          disabled={isSubmitting}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Duplicate</p>
+                      </TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => openEditDialog(rule)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Edit</p>
+                      </TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => openDeleteDialog(rule)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Delete</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </CardFooter>
+              </Card>
+            </motion.div>
+          ))}
+        </motion.div>
       {/* Create Rule Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
