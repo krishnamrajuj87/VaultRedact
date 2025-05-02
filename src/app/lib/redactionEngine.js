@@ -1,6 +1,6 @@
 import { getStorage, ref, uploadBytes, getDownloadURL, getBytes } from 'firebase/storage';
 import { doc, setDoc, getDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
-import { db, auth, getRedactionReportById, getRedactionRulesByIds } from './firebase';
+import { db, auth, getRedactionReportById, getRedactionRulesByIds, getStandardRedactionRules } from './firebase';
 import { getAuth } from 'firebase/auth';
 import * as pdfjsLib from 'pdfjs-dist';
 import { Packer, Document, Paragraph, TextRun, HeadingLevel } from 'docx';
@@ -3763,9 +3763,11 @@ export async function getRedactionReport(documentId) {
         const ruleIds = [...new Set(ruleDetected.map(redaction => redaction.rule_id))];
         console.log("ruleIds", ruleIds);
         const rules = await getRedactionRulesByIds(ruleIds);
+        const standardRules = await getStandardRedactionRules();
+        const allRules = [...rules, ...standardRules];
         console.log("rules", rules);
         const redactionRules = ruleDetected.map((redaction)=>{
-          const rule = rules.find((rule)=>rule.id === redaction.rule_id);
+          const rule = allRules.find((rule)=>rule.id === redaction.rule_id);
           return {
             id: rule.id,
             name: rule.name,
