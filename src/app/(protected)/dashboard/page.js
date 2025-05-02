@@ -1,17 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  File, FilePlus, ChevronRight, Clock, CheckCircle, 
-  AlertTriangle, FileText, Upload, TrendingUp, Shield, ArrowRight, RefreshCw 
-} from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../lib/AuthContext';
-import { getUserDocuments, getDocumentStats } from '../../lib/firebase';
-import PageTransition from '../../components/PageTransition';
-import Button from '../../components/Button';
+import { getUserDocuments } from '../../lib/firebase';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 

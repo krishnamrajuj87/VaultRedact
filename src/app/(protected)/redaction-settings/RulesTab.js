@@ -2,19 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Edit, Trash2, Save, X, Info } from "lucide-react";
+import { Plus, Edit, Trash2 } from "lucide-react";
 import { useAuth } from "../../lib/AuthContext";
-import { 
-  createRedactionRule, 
-  getUserRedactionRules, 
-  updateRedactionRule, 
-  deleteRedactionRule 
+import {
+  createRedactionRule,
+  getUserRedactionRules,
+  updateRedactionRule,
+  deleteRedactionRule
 } from "../../lib/firebase";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Textarea } from "../../../components/ui/textarea";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../../../components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogClose } from "../../../components/ui/dialog";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "../../../components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "../../../components/ui/dialog";
 import { Label } from "../../../components/ui/label";
 import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";

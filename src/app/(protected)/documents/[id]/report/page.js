@@ -3,13 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { 
-  ArrowLeft, AlertCircle, Eye, CheckCircle, XCircle, 
+import {
+  ArrowLeft, AlertCircle, Eye, CheckCircle, XCircle,
   Send, Search, Filter, Download, Info, FileText, FileType
 } from 'lucide-react';
 import Link from 'next/link';
 import { getDocumentById } from '../../../../lib/firebase';
-import { updateRedaction } from '../../../../lib/redactionEngine';
 import { getRedactionReport } from '../../../../lib/redactionEngine';
 import { useAuth } from '../../../../lib/AuthContext';
 const HOST = process.env.NEXT_PUBLIC_API_URL;

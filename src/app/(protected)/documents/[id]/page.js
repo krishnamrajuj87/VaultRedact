@@ -1,17 +1,17 @@
 'use client';
 
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import { motion } from 'framer-motion';
+import {
   ArrowLeft, Calendar, Clock, CheckCircle, Download, AlertCircle,
-  FileText, ChevronRight, Eye, AlertTriangle, Trash2, Play, 
+  FileText, Eye, AlertTriangle, Trash2, Play,
   ShieldCheck, RefreshCw, X, Check, FileType
 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import Link from 'next/link';
 import { getDocumentById, deleteDocument } from '../../../../app/lib/firebase';
-import { redactDocument, getRedactionReport, getUserTemplates } from '../../../../app/lib/redactionEngine';
+import { getUserTemplates } from '../../../../app/lib/redactionEngine';
 import { useAuth } from '../../../../app/lib/AuthContext';
 import TemplateEnrichment from './TemplateEnrichment';
 const HOST = process.env.NEXT_PUBLIC_API_URL;

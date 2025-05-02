@@ -2,32 +2,26 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Edit, Trash2, Copy, Info, List, FileText, Check, X } from "lucide-react";
+import { Plus, Edit, Trash2, FileText, X } from "lucide-react";
 import { useAuth } from '../../../app/lib/AuthContext';
-import { 
-  getUserRedactionRules, 
-  deleteTemplate, 
-  createTemplate, 
+import {
+  getUserRedactionRules,
+  deleteTemplate,
+  createTemplate,
   updateTemplate,
-  getUserTemplates 
+  getUserTemplates,
+  getStandardRedactionRules
 } from '../../../app/lib/firebase';
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Textarea } from "../../../components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../../../components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogDescription } from "../../../components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "../../../components/ui/dialog";
 import { Label } from "../../../components/ui/label";
 import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { CheckboxItem, CheckboxIndicator } from "../../../components/ui/checkbox";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../../components/ui/tabs";
 import { ScrollArea } from "../../../components/ui/scroll-area";
 import { Badge } from "../../../components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
-} from "../../../components/ui/tooltip";
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -47,6 +41,7 @@ const TemplatesTab = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
   const [currentTemplate, setCurrentTemplate] = useState(null);
+  const [standardRules, setStandardRules] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -64,23 +59,25 @@ const TemplatesTab = () => {
     setLoading(true);
     setError(null);
     try {
-      const [fetchedTemplates, fetchedRules] = await Promise.all([
+      const [fetchedTemplates, fetchedRules, fetchedStandardRules] = await Promise.all([
         getUserTemplates(user.uid),
-        getUserRedactionRules(user.uid)
+        getUserRedactionRules(user.uid),
+        getStandardRedactionRules()
       ]);
       
       // Log templates with their rules
-      console.log(`Fetched ${fetchedTemplates.length} templates and ${fetchedRules.length} rules`);
+      console.log(`Fetched ${fetchedTemplates.length} templates, ${fetchedRules.length} rules, ${fetchedStandardRules.length} standard rules`);
       fetchedTemplates.forEach(template => {
         const hasRules = template.rules && Array.isArray(template.rules) && template.rules.length > 0;
         console.log(`Template ${template.id} - ${template.name}:`, 
-          hasRules ? `Contains ${template.rules.length} rules` : "No rules attached",
+          hasRules  ? `Contains ${template.rules.length } rules` : "No rules attached",
           template.ruleIds ? `Has ${template.ruleIds.length} ruleIds` : "No ruleIds"
         );
       });
       
       setTemplates(fetchedTemplates);
       setRules(fetchedRules);
+      setStandardRules(fetchedStandardRules);
     } catch (err) {
       console.error("Error fetching data:", err);
       setError("Failed to load your templates. Please try again.");
@@ -300,6 +297,36 @@ const TemplatesTab = () => {
                 ) : (
                   <ScrollArea className="h-60 border rounded-md p-4">
                     <div className="space-y-2">
+                    <div  className="flex items-start gap-2 pb-2 border-b">
+                        <h5 className="text-sm font-medium leading-none cursor-pointer">Standard Rules</h5>
+                       </div>
+                      {standardRules.map((rule) => (
+                       <div key={rule.id} className="flex items-start gap-2 pb-2 border-b">
+                       <div className="flex h-4 items-center">
+                         <CheckboxItem
+                           checked={formData.ruleIds.includes(rule.id)}
+                           onCheckedChange={() => handleRuleToggle(rule.id)}
+                           id={`rule-${rule.id}`}
+                         >
+                           <CheckboxIndicator />
+                         </CheckboxItem>
+                       </div>
+                       <div className="grid gap-1 leading-none">
+                         <Label
+                           htmlFor={`rule-${rule.id}`}
+                           className="text-sm font-medium leading-none cursor-pointer"
+                         >
+                           {rule.name}
+                         </Label>
+                         <p className="text-xs text-muted-foreground line-clamp-1">
+                           {rule.pattern}
+                         </p>
+                       </div>
+                     </div>
+                      ))}
+                      <div  className="flex items-start gap-2 pb-2 border-b">
+                        <h5 className="text-sm font-medium leading-none cursor-pointer">Custom Rules</h5>
+                       </div>
                       {rules.map((rule) => (
                         <div key={rule.id} className="flex items-start gap-2 pb-2 border-b">
                           <div className="flex h-4 items-center">
@@ -324,6 +351,7 @@ const TemplatesTab = () => {
                           </div>
                         </div>
                       ))}
+                      
                     </div>
                   </ScrollArea>
                 )}
@@ -441,7 +469,7 @@ const TemplatesTab = () => {
                     <CardFooter className="pt-0">
                       <div className="text-xs flex items-center gap-1 text-muted-foreground">
                         <FileText className="h-3 w-3" />
-                        <span>Updated {new Date(template.updatedAt || template.createdAt).toLocaleDateString()}</span>
+                        <span>Updated {new Date((template.updatedAt?.seconds || template.createdAt?.seconds) * 1000).toLocaleDateString()}</span>
                       </div>
                     </CardFooter>
                   </Card>
@@ -482,6 +510,36 @@ const TemplatesTab = () => {
               <Label className="mb-2 block">Select Rules</Label>
               <ScrollArea className="h-60 border rounded-md p-4">
                 <div className="space-y-2">
+                <div  className="flex items-start gap-2 pb-2 border-b">
+                    <h5 className="text-sm font-medium leading-none cursor-pointer">Standard Rules</h5>
+                  </div>
+                  {standardRules.map((rule) => (
+                    <div key={rule.id} className="flex items-start gap-2 pb-2 border-b">
+                      <div className="flex h-4 items-center">
+                        <CheckboxItem
+                          checked={formData.ruleIds.includes(rule.id)}
+                          onCheckedChange={() => handleRuleToggle(rule.id)}
+                          id={`edit-rule-${rule.id}`}
+                        >
+                          <CheckboxIndicator />
+                        </CheckboxItem>
+                      </div>
+                      <div className="grid gap-1 leading-none">
+                        <Label
+                          htmlFor={`edit-rule-${rule.id}`}
+                          className="text-sm font-medium leading-none cursor-pointer"
+                        >
+                          {rule.name}
+                        </Label>
+                        <p className="text-xs text-muted-foreground line-clamp-1">
+                          {rule.pattern}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  <div  className="flex items-start gap-2 pb-2 border-b">
+                    <h5 className="text-sm font-medium leading-none cursor-pointer">Custom Rules</h5>
+                  </div>
                   {rules.map((rule) => (
                     <div key={rule.id} className="flex items-start gap-2 pb-2 border-b">
                       <div className="flex h-4 items-center">
@@ -506,6 +564,7 @@ const TemplatesTab = () => {
                       </div>
                     </div>
                   ))}
+                  
                 </div>
               </ScrollArea>
             </div>

@@ -41,7 +41,8 @@ import {
   createTemplate,
   updateTemplate,
   deleteTemplate,
-  getUserRedactionRules
+  getUserRedactionRules,
+  getStandardRedactionRules
 } from "../../../lib/firebase";
 
 // Animation variants
@@ -76,7 +77,7 @@ export default function TemplatesTab({ userId }) {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [availableRules, setAvailableRules] = useState([]);
-  
+  const [standardRules, setStandardRules] = useState([]);
   // Form state
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -122,11 +123,14 @@ export default function TemplatesTab({ userId }) {
     
     try {
       // Fetch both templates and rules (for rule selection)
-      const [userTemplates, userRules] = await Promise.all([
+      console.log('fetching data');
+      const [userTemplates, userRules, standardRules] = await Promise.all([
         getUserTemplates(userId),
-        getUserRedactionRules(userId)
+        getUserRedactionRules(userId),
+        getStandardRedactionRules()
       ]);
-      
+      console.log('standardRules', standardRules);
+      setStandardRules(standardRules);
       setTemplates(userTemplates);
       setFilteredTemplates(userTemplates);
       setAvailableRules(userRules.filter(rule => rule.isActive));
@@ -599,7 +603,7 @@ export default function TemplatesTab({ userId }) {
                     </span>
                   </div>
                   
-                  {availableRules.length === 0 ? (
+                  {availableRules.length + standardRules.length === 0 ? (
                     <div className="bg-muted p-4 rounded text-center">
                       <p className="text-sm text-muted-foreground">
                         No redaction rules available. Please create rules first.
@@ -642,6 +646,13 @@ export default function TemplatesTab({ userId }) {
                           </Badge>
                         </div>
                       ))}
+                      {
+                        standardRules.map((rule) => (
+                          <div key={rule.id} className="p-2 flex items-center space-x-2">
+                            <input type="checkbox" id={`rule-${rule.id}`} checked={formData.selectedRules.includes(rule.id)} onChange={() => handleRuleToggle(rule.id)} className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
+                          </div>
+                        ))
+                      }
                     </div>
                   )}
                   

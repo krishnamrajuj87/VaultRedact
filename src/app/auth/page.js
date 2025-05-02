@@ -2,14 +2,13 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { Shield, Mail, Lock, AlertCircle, User, Key, LogIn, UserPlus, FileText, CheckCircle, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { signInWithGoogle, signIn, createUser } from '../lib/firebase';
 import { useAuth } from '../lib/AuthContext';
 import Cookies from 'js-cookie';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import Image from 'next/image';
 
 // Custom Google Icon component
 const GoogleIcon = () => (
@@ -394,14 +393,21 @@ function AuthContent() {
       <div className="w-full md:w-1/2 bg-chateau-green-600 flex flex-col overflow-hidden">
         <div className="p-6 md:p-10 h-full flex flex-col">
           {/* Logo and name */}
+          <div className="flex items-center justify-between">
           <div className="flex items-center">
             <Shield className="h-10 w-10 text-white" />
             <div className="ml-3">
               <div className="text-2xl font-bold text-white">VaultRedact</div>
               <div className="text-sm text-chateau-green-50">Document Redaction Solution</div>
             </div>
+            
           </div>
-
+          <motion.div  className="ml-3" initial="hidden"
+            animate="visible"
+            variants={fadeIn}>
+              <Image src="/Slickbit-logo.png" alt="Slickbit Logo" width={120} height={20}  />
+            </motion.div >
+            </div>
           {/* Marketing content */}
           <motion.div 
             className="mt-16 max-w-md"

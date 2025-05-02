@@ -5,7 +5,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../lib/AuthContext';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Menu, X, Shield, Bell } from 'lucide-react';
+import { Menu, X, Shield } from 'lucide-react';
+import Image from 'next/image';
 
 export default function Navbar() {
   const { user, isAuthenticated } = useAuth();
@@ -43,11 +44,12 @@ export default function Navbar() {
             
             <div className="flex items-center">
               <motion.button
-                className="p-2 rounded-full text-white hover:bg-chateau-green-700 focus:outline-none"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+                className="p-2 rounded-full text-white focus:outline-none"
+                // whileHover={{ scale: 1.1 }}
+                // whileTap={{ scale: 0.9 }}
               >
-                <Bell className="h-5 w-5" />
+                {/* <Bell className="h-5 w-5" /> */}
+                <Image src="/Slickbit-logo.png" alt="Slickbit Logo" width={100} height={20}  />
               </motion.button>
             </div>
           </div>

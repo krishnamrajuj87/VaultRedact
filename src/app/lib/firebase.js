@@ -1,14 +1,12 @@
 import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged,
-  GoogleAuthProvider,
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut, GoogleAuthProvider,
   signInWithPopup
 } from 'firebase/auth';
-import { getFirestore, collection, addDoc, getDoc, getDocs, doc, updateDoc, serverTimestamp, query, where, orderBy, deleteDoc } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, getDoc, getDocs, doc, updateDoc, serverTimestamp, query, where, deleteDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 // Firebase configuration
@@ -194,7 +192,27 @@ export const getUserRedactionRules = async (userId) => {
     throw error;
   }
 };
-
+export const getStandardRedactionRules = async () => {
+  try {
+    console.log(`[app/lib/firebase.js] Fetching standard redaction rules`);
+    const q = query(
+      collection(db, 'standard_rules')
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const rules = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    console.log(`[app/lib/firebase.js] Retrieved ${rules.length} redaction rules`);
+    
+    return rules;
+  } catch (error) {
+    console.error('[app/lib/firebase.js] Error fetching redaction rules:', error);
+    throw error;
+  }
+};
 export const createRedactionRule = async (ruleData) => {
   try {
     console.log('[app/lib/firebase.js] Creating new redaction rule');
@@ -256,13 +274,35 @@ export const getRedactionRulesByIds = async (ruleIds) => {
       const querySnapshot = await getDocs(q);
       rules = rules.concat(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     }
+    console.log('getRedactionRulesByIds', rules);
     return rules;
   } catch (error) {
     console.error('[app/lib/firebase.js] Error fetching redaction rules by IDs:', error);
     throw error;
   }
 };
-
+export const getStandardRedactionRulesByIds = async (ruleIds) => {
+  if (!ruleIds || !Array.isArray(ruleIds) || ruleIds.length === 0) return [];
+  try {
+    // Firestore 'in' queries are limited to 10 items per query
+    const chunkSize = 10;
+    let rules = [];
+    for (let i = 0; i < ruleIds.length; i += chunkSize) {
+      const chunk = ruleIds.slice(i, i + chunkSize);
+      const q = query(
+        collection(db, 'standard_rules'),
+        where('__name__', 'in', chunk)
+      );
+      const querySnapshot = await getDocs(q);
+      rules = rules.concat(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }
+    console.log('getStandardRedactionRulesByIds', rules);
+    return rules;
+  } catch (error) {
+    console.error('[app/lib/firebase.js] Error fetching standard redaction rules by IDs:', error);
+    throw error;
+  }
+};
 // Templates helpers
 export const getUserTemplates = async (userId) => {
   try {
@@ -296,8 +336,11 @@ export const getUserTemplates = async (userId) => {
       return bTime - aTime; // descending order
     });
     for (const template of templates) {
+      console.log('template', template);
       const rules = await getRedactionRulesByIds(template.ruleIds);
-      template.rules = rules;
+      const standardRules = await getStandardRedactionRulesByIds(template.ruleIds);
+      console.log('templates rules', rules, standardRules);
+      template.rules = [...rules, ...standardRules];
     }
     return templates;
   } catch (error) {

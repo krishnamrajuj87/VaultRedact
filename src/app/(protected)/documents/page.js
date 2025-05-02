@@ -3,15 +3,15 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { 
-  FileText, Upload, X, File, Check, AlertCircle, 
-  Clock, CheckCircle, Filter, Search, Plus, Calendar
+import {
+  FileText, Upload, X, File, Check, AlertCircle,
+  Clock, CheckCircle, Search, Plus, Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Tabs from '@radix-ui/react-tabs';
 import { useAuth } from '../../lib/AuthContext';
-import { getUserDocuments, uploadFile, addDocument, getCurrentUser, uploadDocument } from '../../../lib/firebase';
+import { getUserDocuments, uploadDocument } from '../../../lib/firebase';
 
 // Animation variants
 const fadeIn = {
@@ -166,7 +166,7 @@ export default function Documents() {
     
     return result;
   });
-
+  console.log('filteredDocuments', filteredDocuments);
   // Format date for display
   const formatDate = (timestamp) => {
     if (!timestamp) return 'N/A';
@@ -623,7 +623,7 @@ export default function Documents() {
                         </h3>
                         <p className="text-xs text-gray-500 mt-1 flex items-center">
                           <Calendar className="h-3 w-3 mr-1" />
-                          {doc.createdAt ? formatDate(doc.createdAt) : 'N/A'}
+                          {doc.updated_at ? formatDate(doc.updated_at) : 'N/A'}
                         </p>
                       </div>
                     </div>

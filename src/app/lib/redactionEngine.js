@@ -1,15 +1,13 @@
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, getBytes } from 'firebase/storage';
-import { doc, updateDoc, setDoc, getDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL, getBytes } from 'firebase/storage';
+import { doc, setDoc, getDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
 import { db, auth, getRedactionReportById, getRedactionRulesByIds } from './firebase';
 import { getAuth } from 'firebase/auth';
 import * as pdfjsLib from 'pdfjs-dist';
-import mammoth from 'mammoth';
 import { Packer, Document, Paragraph, TextRun, HeadingLevel } from 'docx';
 import JSZip from 'jszip';
 import { DOMParser, XMLSerializer } from '@xmldom/xmldom';
-import * as xpath from 'xpath';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { PDFDocument, PDFDict, PDFName, PDFNumber, PDFArray, StandardFonts, rgb, PDFRef, PDFString } from 'pdf-lib';
+import { PDFDocument, PDFDict, PDFName, PDFArray, StandardFonts, rgb, PDFRef, PDFString } from 'pdf-lib';
 import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 
