@@ -21,6 +21,7 @@ const RedactionSettings = () => {
 
   // Handle authentication check
   if (!loading && !user) {
+    console.log("Redirecting to auth");
     redirect("/auth");
   }
 

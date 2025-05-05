@@ -42,6 +42,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-firebase-hooks": "^5.1.1",
+    "react-hot-toast": "^2.5.2",
     "react-loading-skeleton": "^3.5.0",
     "react-pdf": "^9.2.1",
     "sonner": "^2.0.3",

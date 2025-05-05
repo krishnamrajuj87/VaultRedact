@@ -2,8 +2,17 @@
 
 import Navbar from "../components/Navbar";
 import SideNav from "../components/SideNav";
+import { useAuth } from "../lib/AuthContext";
+import { redirect } from "next/navigation";
 
 export default function ProtectedLayout({ children }) {
+  const { user, loading } = useAuth();
+  if (!loading && !user) {
+    console.log("Redirecting to auth");
+    redirect("/auth");
+    
+
+  }
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />

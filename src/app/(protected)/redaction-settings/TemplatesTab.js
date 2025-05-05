@@ -22,6 +22,7 @@ import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { CheckboxItem, CheckboxIndicator } from "../../../components/ui/checkbox";
 import { ScrollArea } from "../../../components/ui/scroll-area";
 import { Badge } from "../../../components/ui/badge";
+import toast, { Toaster } from 'react-hot-toast';
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -80,7 +81,7 @@ const TemplatesTab = () => {
       setStandardRules(fetchedStandardRules);
     } catch (err) {
       console.error("Error fetching data:", err);
-      setError("Failed to load your templates. Please try again.");
+      toast.error("Failed to load your templates. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -112,7 +113,7 @@ const TemplatesTab = () => {
   const handleAddTemplate = async () => {
     const validationError = validateForm();
     if (validationError) {
-      setError(validationError);
+      toast.error(validationError);
       return;
     }
 
@@ -131,10 +132,10 @@ const TemplatesTab = () => {
       fetchData();
       setIsAddDialogOpen(false);
       resetForm();
-      showSuccessMessage("Template created successfully");
+      toast.success("Template created successfully");
     } catch (err) {
       console.error("Error creating template:", err);
-      setError("Failed to create template. Please try again: " + err.message);
+      toast.error("Failed to create template. Please try again: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -153,7 +154,7 @@ const TemplatesTab = () => {
   const handleUpdateTemplate = async () => {
     const validationError = validateForm();
     if (validationError) {
-      setError(validationError);
+      toast.error(validationError);
       return;
     }
 
@@ -169,10 +170,10 @@ const TemplatesTab = () => {
       fetchData();
       setIsEditDialogOpen(false);
       resetForm();
-      showSuccessMessage("Template updated successfully");
+      toast.success("Template updated successfully");
     } catch (err) {
       console.error("Error updating template:", err);
-      setError("Failed to update template. Please try again.");
+      toast.error("Failed to update template. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -193,10 +194,10 @@ const TemplatesTab = () => {
       await deleteTemplate(currentTemplate.id);
       fetchData();
       setIsDeleteDialogOpen(false);
-      showSuccessMessage("Template deleted successfully");
+      toast.success("Template deleted successfully");
     } catch (err) {
       console.error("Error deleting template:", err);
-      setError("Failed to delete template. Please try again.");
+      toast.error("Failed to delete template. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -218,13 +219,6 @@ const TemplatesTab = () => {
     if (!formData.name.trim()) return "Template name is required";
     if (formData.ruleIds.length === 0) return "Please select at least one rule";
     return null;
-  };
-
-  const showSuccessMessage = (message) => {
-    setSuccessMessage(message);
-    setTimeout(() => {
-      setSuccessMessage(null);
-    }, 3000);
   };
 
   const getTemplateRulesInfo = (template) => {
@@ -253,6 +247,7 @@ const TemplatesTab = () => {
 
   return (
     <div>
+      <Toaster position="bottom-center" />
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">Redaction Templates</h2>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -370,27 +365,6 @@ const TemplatesTab = () => {
           </DialogContent>
         </Dialog>
       </div>
-
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {successMessage && (
-        <Alert variant="default" className="mb-6 bg-green-50 border-green-200 text-green-800">
-          <AlertDescription className="flex items-center gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="absolute right-2 top-2" 
-            onClick={() => setError(null)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-          </AlertDescription>
-        </Alert>
-      )}
 
       {templates.length === 0 ? (
         <div className="text-center py-12 bg-muted/30 rounded-lg">

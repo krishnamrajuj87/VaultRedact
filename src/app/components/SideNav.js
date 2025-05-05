@@ -49,8 +49,12 @@ export default function SideNav() {
 
   const handleLogout = async () => {
     try {
-      await signOut();
-      router.push('/auth');
+      
+      signOut();
+      setTimeout(() => {
+        router.push('/auth');
+      }, 1000);
+      
     } catch (error) {
       console.error('Error logging out:', error);
     }

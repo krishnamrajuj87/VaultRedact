@@ -12,6 +12,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import * as Tabs from '@radix-ui/react-tabs';
 import { useAuth } from '../../lib/AuthContext';
 import { getUserDocuments, uploadDocument } from '../../../lib/firebase';
+import toast, { Toaster } from 'react-hot-toast';
 
 // Animation variants
 const fadeIn = {
@@ -20,7 +21,7 @@ const fadeIn = {
 };
 
 const slideUp = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 1, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
 };
 
@@ -40,11 +41,9 @@ export default function Documents() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [uploadState, setUploadState] = useState('idle'); // idle, uploading, success, error
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadError, setUploadError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
   const [loadStatus, setLoadStatus] = useState(''); // For showing detailed loading status
   const [activeFilter, setActiveFilter] = useState('all');
   const router = useRouter();
@@ -71,7 +70,6 @@ export default function Documents() {
       if (isLoading) {
         console.log('Loading timeout reached, forcing exit from loading state');
         setIsLoading(false);
-        setLoadError('Loading timed out. Please refresh the page to try again.');
       }
     }, 10000); // 10 seconds max loading time
 
@@ -91,7 +89,6 @@ export default function Documents() {
       console.log('First document details:', docs.length > 0 ? JSON.stringify(docs[0], null, 2) : 'No documents found');
       
       setLoadStatus('');
-      setLoadError('');
       return docs;
     } catch (error) {
       console.error('Error fetching documents:', error);
@@ -107,7 +104,7 @@ export default function Documents() {
       }
       
       // If we've retried enough times, show error
-      setLoadError('Failed to load documents. Please refresh to try again.');
+      toast.error('Failed to load documents. Please refresh to try again.');
       setLoadStatus('');
       return [];
     }
@@ -186,13 +183,12 @@ export default function Documents() {
       // Check file size - 5MB maximum (5 * 1024 * 1024 bytes)
       const maxSizeInBytes = 5 * 1024 * 1024;
       if (file.size > maxSizeInBytes) {
-        setUploadError(`File size exceeds 5MB limit. Please select a smaller file.`);
+        toast.error('File size exceeds 5MB limit. Please select a smaller file.');
         setSelectedFile(null);
         return;
       }
       
       setSelectedFile(file);
-      setUploadError('');
     }
   };
 
@@ -200,20 +196,20 @@ export default function Documents() {
   const handleUpload = async () => {
     if (!selectedFile) {
       console.log('Upload aborted - No file selected');
-      setUploadError('Please select a file first');
+      toast.error('Please select a file first');
       return;
     }
     
     // Double-check file size before upload
     const maxSizeInBytes = 5 * 1024 * 1024;
     if (selectedFile.size > maxSizeInBytes) {
-      setUploadError(`File size exceeds 5MB limit. Please select a smaller file.`);
+      toast.error('File size exceeds 5MB limit. Please select a smaller file.');
       return;
     }
     
     if (!user || !user.uid) {
       console.log('Upload aborted - No authenticated user found');
-      setUploadError('You must be logged in to upload documents. Please refresh the page and try again.');
+      toast.error('You must be logged in to upload documents. Please refresh the page and try again.');
       return;
     }
     
@@ -272,10 +268,15 @@ export default function Documents() {
         setIsUploadModalOpen(false);
         setUploadState('idle');
       }, 2000);
+      
+      toast.success('Your document has been uploaded and is ready for processing.');
+      const docs = await fetchUserDocuments(user.uid);
+      console.log(`Setting ${docs.length} documents to state`);
+      setDocuments(docs);
     } catch (error) {
       console.error('Upload failed:', error);
       setUploadState('error');
-      setUploadError(error.message || 'Upload failed. Please try again.');
+      toast.error(error.message || 'Upload failed. Please try again.');
     }
   };
 
@@ -284,7 +285,6 @@ export default function Documents() {
     setSelectedFile(null);
     setUploadState('idle');
     setUploadProgress(0);
-    setUploadError('');
   };
 
   if (authLoading) {
@@ -320,48 +320,7 @@ export default function Documents() {
 
   return (
     <div className="p-6 md:p-8">
-      {loadError && (
-        <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <AlertCircle className="h-5 w-5 text-red-400" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm">{loadError}</p>
-              <button 
-                onClick={() => {
-                  setIsLoading(true);
-                  setLoadError('');
-                  if (user) {
-                    fetchUserDocuments(user.uid)
-                      .then(docs => {
-                        setDocuments(docs);
-                        setIsLoading(false);
-                      })
-                      .catch(() => {
-                        setIsLoading(false);
-                      });
-                  } else {
-                    setIsLoading(false);
-                    setLoadError('You are not logged in. Please refresh the page to log in again.');
-                  }
-                }}
-                className="text-sm text-red-800 font-medium underline mt-1"
-              >
-                Try again
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {loadStatus && !isLoading && (
-        <div className="mb-6 bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg flex items-center">
-          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-600 mr-2"></div>
-          <p className="text-sm">{loadStatus}</p>
-        </div>
-      )}
-
+      <Toaster position="bottom-center" />
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -431,7 +390,7 @@ export default function Documents() {
           if (open) {
             if (!user) {
               console.log('User not authenticated when opening modal');
-              setLoadError('You are not logged in. Please refresh the page to log in again.');
+              toast.error('You are not logged in. Please refresh the page to log in again.');
               return; // Don't open the modal
             }
           }
@@ -516,17 +475,6 @@ export default function Documents() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                   >
-                    {uploadError && (
-                      <div className="mb-4 rounded-md bg-red-50 p-4">
-                        <div className="flex">
-                          <AlertCircle className="h-5 w-5 text-red-400" />
-                          <div className="ml-3">
-                            <h3 className="text-sm font-medium text-red-800">{uploadError}</h3>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
                     <div className="space-y-4">
                       <div className="border-2 border-dashed border-gray-300 rounded-lg px-6 py-8 text-center">
                         {selectedFile ? (
@@ -618,13 +566,13 @@ export default function Documents() {
                         <FileText className="h-5 w-5 text-gray-500" />
                       </div>
                       <div className="ml-3">
-                        <h3 className="font-medium text-gray-900 text-sm line-clamp-1">
+                        <h3 className="font-medium text-gray-900 text-sm line-clamp-1 break-all">
                           {doc.fileName || doc.filename || 'Unnamed Document'}
                         </h3>
-                        <p className="text-xs text-gray-500 mt-1 flex items-center">
+                        {/* <p className="text-xs text-gray-500 mt-1 flex items-center">
                           <Calendar className="h-3 w-3 mr-1" />
                           {doc.updated_at ? formatDate(doc.updated_at) : 'N/A'}
-                        </p>
+                        </p> */}
                       </div>
                     </div>
                     <span
@@ -675,7 +623,7 @@ export default function Documents() {
               onClick={() => {
                 if (!user) {
                   console.log('User not authenticated, showing error');
-                  setLoadError('You are not logged in. Please refresh the page to log in again.');
+                  toast.error('You are not logged in. Please refresh the page to log in again.');
                   return;
                 }
                 setIsUploadModalOpen(true);

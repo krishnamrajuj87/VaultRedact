@@ -21,6 +21,7 @@ import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Badge } from "../../../components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../components/ui/tooltip";
+import toast, { Toaster } from 'react-hot-toast';
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -65,7 +66,7 @@ const RulesTab = () => {
       setStandardRules(standardRules);
     } catch (err) {
       console.error("Error fetching rules:", err);
-      setError("Failed to load your redaction rules. Please try again.");
+      toast.error("Failed to load your redaction rules. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -102,7 +103,7 @@ const RulesTab = () => {
   const handleAddRule = async () => {
     const validationError = validateForm();
     if (validationError) {
-      setError(validationError);
+      toast.error(validationError);
       return;
     }
 
@@ -119,9 +120,10 @@ const RulesTab = () => {
       await fetchRules();
       setIsAddDialogOpen(false);
       resetForm();
+      toast.success('Rule added successfully!');
     } catch (error) {
       console.error("Error adding rule:", error);
-      setError("Failed to add redaction rule. Please try again.");
+      toast.error("Failed to add redaction rule. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -144,7 +146,7 @@ const RulesTab = () => {
   const handleUpdateRule = async () => {
     const validationError = validateForm();
     if (validationError) {
-      setError(validationError);
+      toast.error(validationError);
       return;
     }
 
@@ -162,9 +164,10 @@ const RulesTab = () => {
       await fetchRules();
       setIsEditDialogOpen(false);
       resetForm();
+      toast.success('Rule updated successfully!');
     } catch (error) {
       console.error("Error updating rule:", error);
-      setError("Failed to update redaction rule. Please try again.");
+      toast.error("Failed to update redaction rule. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -185,9 +188,10 @@ const RulesTab = () => {
       await deleteRedactionRule(currentRule.id);
       await fetchRules();
       setIsDeleteDialogOpen(false);
+      toast.success('Rule deleted successfully!');
     } catch (error) {
       console.error("Error deleting rule:", error);
-      setError("Failed to delete redaction rule. Please try again.");
+      toast.error("Failed to delete redaction rule. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -235,6 +239,7 @@ const RulesTab = () => {
 
   return (
     <div>
+      <Toaster position="bottom-center" />
       <div className="flex justify-end items-center mb-6">
         {/* <h2 className="text-xl font-semibold">Redaction Rules</h2> */}
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -323,12 +328,6 @@ const RulesTab = () => {
           </DialogContent>
         </Dialog>
       </div>
-
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
 
       {rules.length === 0 ? (
         <div className="text-center py-12 bg-muted/30 rounded-lg">
