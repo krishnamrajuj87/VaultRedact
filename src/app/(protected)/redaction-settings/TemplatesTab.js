@@ -290,11 +290,7 @@ const TemplatesTab = () => {
               </div>
               <div>
                 <Label className="mb-2 block">Select Rules</Label>
-                {rules.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    You haven't created any rules yet. Create rules first to add them to a template.
-                  </p>
-                ) : (
+               
                   <ScrollArea className="h-60 border rounded-md p-4">
                     <div className="space-y-2">
                     <div  className="flex items-start gap-2 pb-2 border-b">
@@ -324,9 +320,14 @@ const TemplatesTab = () => {
                        </div>
                      </div>
                       ))}
-                      <div  className="flex items-start gap-2 pb-2 border-b">
+                      {
+                        rules.length !== 0 && (
+                          <div  className="flex items-start gap-2 pb-2 border-b">
                         <h5 className="text-sm font-medium leading-none cursor-pointer">User Redaction Rules</h5>
                        </div>
+                        )
+                      }
+                      
                       {rules.map((rule) => (
                         <div key={rule.id} className="flex items-start gap-2 pb-2 border-b">
                           <div className="flex h-4 items-center">
@@ -354,7 +355,7 @@ const TemplatesTab = () => {
                       
                     </div>
                   </ScrollArea>
-                )}
+           
               </div>
             </div>
             <DialogFooter>

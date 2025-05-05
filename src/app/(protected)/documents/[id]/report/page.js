@@ -379,6 +379,10 @@ const getCategoryName = (category) => {
                     src={`https://docs.google.com/viewer?url=${encodeURIComponent(document.downloadUrl)}&embedded=true`}
                     className="w-full h-full border-0"
                     title="Original Document Preview"
+                    onError={(e) => {
+                      console.error("Failed to load document preview:", e);
+                      // You could set a state here to trigger fallback
+                    }}
                   ></iframe>
                 ) : (
                   <div className="text-center p-6 h-full flex flex-col justify-center items-center">

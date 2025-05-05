@@ -96,7 +96,7 @@ const RedactionSettings = () => {
             Configure your redaction rules and templates for document processing.
           </p>
         </div>
-        <Button 
+        {/* <Button 
           onClick={handleInitializeData} 
           disabled={initializing}
           isLoading={initializing}
@@ -105,7 +105,7 @@ const RedactionSettings = () => {
         >
           <Database className="h-4 w-4" />
           <span>Create Rules & Templates</span>
-        </Button>
+        </Button> */}
       </motion.div>
 
       {initSuccess && (
