@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { getDocumentById } from '../../../../lib/firebase';
 import { getRedactionReport } from '../../../../lib/redactionEngine';
 import { useAuth } from '../../../../lib/AuthContext';
+import DocumentView from '../../../../components/DocumentView';
 const HOST = process.env.NEXT_PUBLIC_API_URL;
 // Animation variants
 const fadeIn = {
@@ -43,7 +44,7 @@ export default function RedactionReport() {
       router.push('/auth');
       return;
     }
-
+    console.log("user", user, documentId);
     if (user && documentId) {
       fetchDocumentDetails();
     }
@@ -375,15 +376,7 @@ const getCategoryName = (category) => {
               </div>
               <div className="p-0 flex-grow overflow-hidden" style={{ height: '70vh' }}>
                 {document.downloadUrl ? (
-                  <iframe 
-                    src={`https://docs.google.com/viewer?url=${encodeURIComponent(document.downloadUrl)}&embedded=true`}
-                    className="w-full h-full border-0"
-                    title="Original Document Preview"
-                    onError={(e) => {
-                      console.error("Failed to load document preview:", e);
-                      // You could set a state here to trigger fallback
-                    }}
-                  ></iframe>
+                 <DocumentView url={document.downloadUrl} title="Original Document Preview" className="w-full h-full border-0" />
                 ) : (
                   <div className="text-center p-6 h-full flex flex-col justify-center items-center">
                     <div className="p-3 rounded-lg bg-gray-100">
@@ -417,11 +410,7 @@ const getCategoryName = (category) => {
               </div>
               <div className="p-0 flex-grow overflow-hidden" style={{ height: '70vh' }}>
                 {document.redactedUrl ? (
-                  <iframe 
-                    src={`https://docs.google.com/viewer?url=${encodeURIComponent(document.redactedUrl)}&embedded=true`}
-                    className="w-full h-full border-0"
-                    title="Redacted Document Preview"
-                  ></iframe>
+                  <DocumentView url={document.redactedUrl} title="Redacted Document Preview" className="w-full h-full border-0" />
                 ) : (
                   <div className="text-center p-6 h-full flex flex-col justify-center items-center">
                     <div className="p-3 rounded-lg bg-gray-100">

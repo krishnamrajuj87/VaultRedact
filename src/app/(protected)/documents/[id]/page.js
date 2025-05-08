@@ -14,6 +14,7 @@ import { getDocumentById, deleteDocument } from '../../../../app/lib/firebase';
 import { getUserTemplates } from '../../../../app/lib/redactionEngine';
 import { useAuth } from '../../../../app/lib/AuthContext';
 import TemplateEnrichment from './TemplateEnrichment';
+import DocumentView from '../../../components/DocumentView';
 const HOST = process.env.NEXT_PUBLIC_API_URL;
 // Add ClientSideInitComponent to handle browser extension modifications
 function ClientSideInitComponent() {
@@ -715,11 +716,7 @@ export default function DocumentDetail() {
               
               <div className="flex-grow p-4 flex items-center justify-center bg-gray-100 min-h-[400px]">
                 {document.downloadUrl ? (
-                  <iframe 
-                    src={`https://docs.google.com/viewer?url=${encodeURIComponent(document.downloadUrl)}&embedded=true`}
-                    className="w-full h-full min-h-[400px] border-0"
-                    title="Document Preview"
-                  ></iframe>
+                  <DocumentView url={document.downloadUrl} title="Document Preview" className="w-full h-full min-h-[400px] border-0" />
                 ) : (
                   <div className="text-center p-6">
                     <div className="mx-auto w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center mb-4">
@@ -1098,7 +1095,6 @@ export default function DocumentDetail() {
                 ) : (
                   <div className="space-y-2">
                     {templates.map(template => {
-                      console.log('Template:', template);
                       // Calculate actual rule count
                       let ruleCount = 0;
                       if (template.rules && Array.isArray(template.rules) && template.rules.length > 0) {
@@ -1106,7 +1102,7 @@ export default function DocumentDetail() {
                       } else if (template.ruleIds && Array.isArray(template.ruleIds) && template.ruleIds.length > 0) {
                         ruleCount = template.ruleIds.length;
                       }
-                      console.log('Rule Count:', ruleCount,template.ruleIds && Array.isArray(template.ruleIds),template.ruleIds.length);
+
                       const hasRules = ruleCount > 0;
                       const isSelected = selectedTemplateIds.includes(template.id);
                       
